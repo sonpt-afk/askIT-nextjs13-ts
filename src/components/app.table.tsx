@@ -2,7 +2,11 @@
 import Button from 'react-bootstrap/Button';
 import Table from 'react-bootstrap/Table';
 import CreateModal from './create.modal';
+import EditModal from './edit.modal';
 import { useState } from 'react';
+import Link from 'next/link';
+import {toast} from 'react-toastify';
+import {mutate} from 'swr';
 interface IProps {
   blogs: IBlog[]
 }
@@ -10,7 +14,9 @@ interface IProps {
 function BasicExample(props: IProps) {
   const {blogs } = props;
   const [showModalCreate, setShowModalCreate] = useState<boolean>(false);
-  console.log('check props blogs', blogs)
+  const [showModalEdit, setShowModalEdit] = useState<boolean>(false);
+  const [blog, setBlog] = useState<IBlog | null>(null);
+
   return (
     <>
     <div className='mb-3' style={{ display: 'flex',justifyContent:'space-between'}}>
@@ -27,17 +33,44 @@ function BasicExample(props: IProps) {
         </tr>
       </thead>
       <tbody>
-        {blogs?.map(blog=>{
+        {blogs?.map(item=>{
           return (
-            <tr key={blog.id}>
-              <td>{blog.id}</td>
+            <tr key={item.id}>
+              <td>{item.id}</td>
 
-              <td>{blog.title}</td>
-              <td>{blog.author}</td>
+              <td>{item.title}</td>
+              <td>{item.author}</td>
               <td>
-                <Button>View</Button>
-                <Button variant='warning' className='mx-3'>Edit</Button>
-                <Button variant='danger'>Delete</Button>
+                  <Link className='btn btn-primary' href={`/blogs/${item.id}`}>
+                    View
+                    </Link>
+                <Button variant='warning' className='mx-3' 
+                onClick={()=> {
+                  setShowModalEdit(true)
+                  setBlog(item)
+                }}>Edit</Button>
+                <Button variant='danger'
+                onClick={()=> {
+                  if (confirm(`Do you want to delete this blog(id= ${item.id})`) == true) {
+                    fetch(`http://localhost:8000/blogs/${item.id}`, {
+                      method: 'DELETE',
+                      headers: {
+                        'Accept': 'application/json, text/plain, */*',
+                        'Content-Type': 'application/json'
+                      },
+                    }).then(res => {
+                      if(res){
+      
+                      toast.warning('Delete blog success !')
+                      mutate('http://localhost:8000/blogs')
+                      }
+                  })
+
+                  } else {
+                    return;
+                  }
+                }}
+                >Delete</Button>
                 </td>
             </tr>
           )
@@ -49,6 +82,12 @@ function BasicExample(props: IProps) {
     <CreateModal
     showModalCreate={showModalCreate}
     setShowModalCreate={setShowModalCreate}
+    />
+    <EditModal
+    showModalEdit={showModalEdit}
+    setShowModalEdit={setShowModalEdit}
+    blog={blog}
+    setBlog={setBlog}
     />
     </>
   );
